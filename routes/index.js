@@ -64,47 +64,47 @@ router.get('/search', function(req, res, next) {
     }
   }
   
-	request(`https://singapore.kinokuniya.com/bw/${req.query.isbn}`, (err, kino) => {
-		//var m1 = kino.body.match(/<meta property="og:title" content="([^"]+)"/);
-		//var m2 = kino.body.match(/<meta property="og:description" content="([^"]+)"/);
+  const url = `https://singapore.kinokuniya.com/bw/${req.query.isbn}`;
+	request(url, (err, kino) => {
 		const doc = (new JSDOM(kino.body)).window;
 		
 		const kino_title = doc.document.querySelector('.dContent h1').innerText;
 		const kino_desc = doc.document.querySelector('#product_description_box .long_description').innerText;
     const kino_authors = doc.document.querySelectorAll('.author a');
-		const kino_category = doc.document.querySelector('.clearfix li:nth-child(2)').innerText;
 		const price = doc.document.querySelector('.price span').innerText;
-		//console.log(price);
 		const img = doc.document.querySelector('.slider3 img');
 		
     response.isbn = req.query.isbn;
     response.title = kino_title;
     response.cover = img.src;
-    response.category = kino_category;
     response.description = kino_desc.trim();
     response.author = Array.from(kino_authors).map(author => author.text);
     
-    offers.kinokuniya = {
-      price: price,
-      url: doc.window.document.querySelector('link[rel="canonical"]').href
-    };
+    offers.kinokuniya = { price, url }; // { price: price, url: url }
     
     done();
 	});
   
-  request(`https://www.thriftbooks.com/browse/?b.search=${req.query.isbn}`, (err, thrift) => {
-		const dom = new JSDOM(thrift.body);
-		const book_price = dom.window.document.querySelector('.price').textContent;
+  request(`https://opentrolley.com.sg/Book_Detail.aspx?EAN=${req.query.isbn}`, (err, trolley) => {
+		const dom = new JSDOM(trolley.body);
+		const book_price = dom.window.document.querySelector('span#ctl00_ContentPlaceHolder1_lblDiscountedPrice').textContent;
     
-		offers.thriftbooks = {
+		offers.opentrolley = {
       price: book_price,
-      url: dom.window.document.querySelector('link[rel="canonical"]').href
+      url: `https://opentrolley.com.sg/Book_Detail.aspx?EAN=${req.query.isbn}`
     };
     
     done();
   });
   
   request(`https://www.bookdepository.com/search?searchTerm=${req.query.isbn}`, (err, depo) => {
+    if (err) {
+      console.error('Error fetching from bookdepository', err);
+      offers.bookdepository = {
+        error: 
+      }
+    }
+    
 		const depo_dom = new JSDOM(depo.body);
 		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent;
     
@@ -129,6 +129,7 @@ router.get('/amazon', function(req, res, next) {
   };
 	request(options, (err, amazon) => {
     const amazon_dom = new JSDOM(amazon.body);
+    const book_price = amazon_dom.window.document.querySelector('.sale-price').textContent;
 		let response = { 'body': amazon.body}
     
 		res.json(response)
