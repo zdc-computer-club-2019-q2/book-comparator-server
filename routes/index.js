@@ -199,7 +199,7 @@ router.get('/amazon', function(req, res, next) {
     
     const book_link = title_dom[0].href;
     
-		let response = { 'body': book_link }
+		let response = { 'body': book_link };
     
 		res.json(response)
     
