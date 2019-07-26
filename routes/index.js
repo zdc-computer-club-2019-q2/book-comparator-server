@@ -85,19 +85,18 @@ router.get('/search', function(req, res, next) {
 		const price = doc.document.querySelector('.price span').innerText;
 		const img = doc.document.querySelector('.slider3 img');
 		
-    let recommendation = Array.from(doc.document.querySelectorAll('#customers_also_bought .slider_pager.bx-clone .box'));
-    recommendation.map((box) => ({ 
-      cover: box.querySelector('.book-image').src,
-      isbn: box.querySelector('.book-image').alt,
+//     let recommendation = Array.from(doc.document.querySelectorAll('#customers_also_bought .slider_pager.bx-clone .box'));
+//     recommendation.map((box) => ({ 
+//       cover: box.querySelector('.book-image').src,
+//       isbn: box.querySelector('.book-image').alt
       
-    }));
+//     }));
     
     response.isbn = req.query.isbn;
     response.title = kino_title;
     response.cover = img.src;
     response.description = kino_desc ? kino_desc.trim() : 'No description';
     response.author = Array.from(kino_authors).map(author => author.text);
-    response.recommendation = recommendation;
     
     offers.kinokuniya = { price, url }; // { price: price, url: url }
     
@@ -179,8 +178,10 @@ router.get('/amazon', function(req, res, next) {
 	request(options, (err, amazon) => {
     const amazon_dom = new JSDOM(amazon.body);
     const first_result = amazon_dom.window.document.querySelector("div[data-cel-widget='search_result_0']");
+    console.log(amazon_dom);
+
     if (!first_result) {
-      res.json('first_result')
+      res.json({ 'body': amazon.body })
       return;
     }
     
@@ -189,7 +190,6 @@ router.get('/amazon', function(req, res, next) {
       res.json(links)
       return;
     }
-    
     let title_dom = links.filter((dom) => { dom.className === "a-link-normal a-text-normal" });
     
     if (title_dom.length !== 1) {
