@@ -29,6 +29,7 @@ router.get('/search', function(req, res, next) {
     ],
     "recommended": [
       { "isbn": "29384792837", "title": "Another book", "description", "cover" },
+      { "isbn": "29384792837", "title": "Another book", "description", "cover" }
     ],
     "reviews": [
       { "username": "", "rating": 3, "comment": "" }
@@ -83,14 +84,20 @@ router.get('/search', function(req, res, next) {
     const kino_authors = doc.document.querySelectorAll('.author a');
 		const price = doc.document.querySelector('.price span').innerText;
 		const img = doc.document.querySelector('.slider3 img');
-		const recommendation = doc.document.querySelectorAll('#customers_also_bought .slider_pager.bx-clone .box');
+		
+    let recommendation = Array.from(doc.document.querySelectorAll('#customers_also_bought .slider_pager.bx-clone .box'));
+    recommendation.map((box) => ({ 
+      cover: box.querySelector('.book-image').src,
+      isbn: box.querySelector('.book-image').alt,
+      
+    }));
     
     response.isbn = req.query.isbn;
     response.title = kino_title;
     response.cover = img.src;
     response.description = kino_desc ? kino_desc.trim() : 'No description';
     response.author = Array.from(kino_authors).map(author => author.text);
-    response.recommended = Array.from()
+    response.recommendation = recommendation;
     
     offers.kinokuniya = { price, url }; // { price: price, url: url }
     
@@ -141,6 +148,8 @@ router.get('/search', function(req, res, next) {
     try {
       const depo_dom = new JSDOM(depo.body);
       const book_price = depo_dom.window.document.querySelector('.sale-price').textContent;
+      
+      response.categories = [...depo_dom.window.document.querySelector('.breadcrumb').children].slice(1).map(el => el.textContent.trim());
 
       offers.bookdepository = {
         price: book_price,
@@ -152,6 +161,7 @@ router.get('/search', function(req, res, next) {
       };
     }
     
+    
     done();
   });
   
@@ -159,7 +169,6 @@ router.get('/search', function(req, res, next) {
 });
 
 router.get('/amazon', function(req, res, next) {
-  
   const options = {
     url: `https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Dstripbooks-intl-ship&field-keywords=${req.query.isbn}`,
     gzip: true,
@@ -169,10 +178,28 @@ router.get('/amazon', function(req, res, next) {
   };
 	request(options, (err, amazon) => {
     const amazon_dom = new JSDOM(amazon.body);
-    const first_result = amazon_dom.querySelector("div[data-cel-widget='search_result_0']");
-    if !first_result:
+    const first_result = amazon_dom.window.document.querySelector("div[data-cel-widget='search_result_0']");
+    if (!first_result) {
+      res.json('first_result')
+      return;
+    }
     
-		let response = { 'body': amazon.body}
+    let links = first_result.querySelectorAll("a.a-link-normal.a-text-normal");
+    if (!links) {
+      res.json(links)
+      return;
+    }
+    
+    let title_dom = links.filter((dom) => { dom.className === "a-link-normal a-text-normal" });
+    
+    if (title_dom.length !== 1) {
+      res.json(title_dom)
+      return;
+    }
+    
+    const book_link = title_dom[0].href;
+    
+		let response = { 'body': book_link }
     
 		res.json(response)
     
