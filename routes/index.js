@@ -10,9 +10,47 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/search', function(req, res, next) {
-  const price_list = {};
+  const response = {};
+  /**
+  {
+    "title": "1984",
+    "cover": "http://.../1984.gif",
+    "categories": "",
+    "offers": [
+      { "site": "amazon", "price": 100, "url": "" },
+      { "site": "", "price": 95, "url": "" },
+      { "site": "", "price": 80, "url": "" },
+      { "site": "", "price": 105, "url": "" }
+    ],
+    "description": "A dystop",
+    "author": "George Orwell",
+    "recommended": [
+      { "isbn": "29384792837", "title": "Another book", "description" },
+    ],
+    "reviews": [
+      { "username": "", "rating": 3, "comment": "" }
+    ]
+  }
+  */
+  
+  const offers = {
+    
+  };
+  /**
+  offers = {
+    'bookdepository': {
+      price: 100,
+      url: 'something'
+    },
+    'kino': {
+      price: 120
+      
+    }
+  }
+  */
   function done() {
-    if ('bookdepository' in price_list && 'kinokuniya' in price_list) {
+    if ('bookdepository' in offers && 'kinokuniya' in offers) {
+      
     }
   }
 	request(`https://singapore.kinokuniya.com/bw/${req.query.isbn}`, (err, kino) => {
@@ -20,25 +58,33 @@ router.get('/search', function(req, res, next) {
 		//var m2 = kino.body.match(/<meta property="og:description" content="([^"]+)"/);
 		const doc = (new JSDOM(kino.body)).window;
 		
-		var m1 = (doc.document.getElementsByClassName('dContent')[0].querySelector('h1').textContent);
-		var m2 = (doc.document.getElementsByClassName('dInfoTxt product-descrip readmore-js-section readmore-js-collapsed')[0].textContent);
-		var m3 = (doc.document.getElementsByClassName('author')[0].querySelectorAll('a'));
-		var m4 = (doc.document.getElementsByClassName('clearfix')[0].querySelector('li:nth-child(2)').textContent);
+		var kino_title = (doc.document.getElementsByClassName('dContent')[0].querySelector('h1').textContent);
+		var kino_desc = (doc.document.getElementsByClassName('dInfoTxt product-descrip readmore-js-section readmore-js-collapsed')[0].textContent);
+		var kino_author = (doc.document.getElementsByClassName('author')[0].querySelectorAll('a'));
+		var kino_category = (doc.document.getElementsByClassName('clearfix')[0].querySelector('li:nth-child(2)').textContent);
 		//var price = (doc.document.getElementsByClassName('price')[0].querySelector('span').textContent);
 		//console.log(price);
 		var img = (doc.document.getElementsByClassName('slider3')[0].querySelector('img'));
 		
-		var authors_array = [];
-		Array.from(m3).forEach(function(m){
-			authors_array.push(m.textContent);
+		var kino_authors_array = [];
+		Array.from(kino_authors).forEach(function(m){
+			kino_authors_array.push(m.textContent);
 		})
+    
+    response.isbn = req.query.isbn;
+    response.title = kino_title;
+    response.cover = img.src;
+    response.category = kino_category;
+    response.description = kino_desc.trim();
+    response.author = kino_authors_array;
+    
 		res.json({
 			isbn: req.query.isbn,
-			title: m1,
+			title: kino_title,
 			cover: img.src,
-			category: m4,
-			description: m2.trim(),
-			author: authors_array,
+			category: kino_category,
+			description: kino_desc.trim(),
+			author: kino_authors_array,
 		});
     
     done();
@@ -48,12 +94,14 @@ router.get('/search', function(req, res, next) {
 		const depo_dom = new JSDOM(depo.body)
 		// ser = depo_dom.serialize()
 		// console.log(ser)
-		const book_title = depo_dom.window.document.querySelector('.item-info').querySelector('h1[itemprop="name"').textContent;
-		console.log(book_title)
 		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent
 		console.log(book_price)
     
-		price_list["bookdepository"] = book_price
+		offers.bookdepository = {
+      price: book_price;
+      url: depo_dom.document.location.href
+    }
+    
   });
 });
 
