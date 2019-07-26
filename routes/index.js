@@ -28,7 +28,7 @@ router.get('/search', function(req, res, next) {
       "Another author"
     ],
     "recommended": [
-      { "isbn": "29384792837", "title": "Another book", "description" },
+      { "isbn": "29384792837", "title": "Another book", "description", "cover" },
     ],
     "reviews": [
       { "username": "", "rating": 3, "comment": "" }
@@ -66,6 +66,16 @@ router.get('/search', function(req, res, next) {
   
   const url = `https://singapore.kinokuniya.com/bw/${req.query.isbn}`;
 	request(url, (err, kino) => {
+    if (err) {
+      console.error('Error fetching from kinokuniya', err);
+      offers.kinokuniya = {
+        error: true
+      };
+      
+      done();
+      
+      return;
+    }
 		const doc = (new JSDOM(kino.body)).window;
 		
 		const kino_title = doc.document.querySelector('.dContent h1').innerText;
@@ -73,12 +83,14 @@ router.get('/search', function(req, res, next) {
     const kino_authors = doc.document.querySelectorAll('.author a');
 		const price = doc.document.querySelector('.price span').innerText;
 		const img = doc.document.querySelector('.slider3 img');
-		
+		const recommendation = doc.document.querySelectorAll('#customers_also_bought .slider_pager.bx-clone .box');
+    
     response.isbn = req.query.isbn;
     response.title = kino_title;
     response.cover = img.src;
-    response.description = kino_desc.trim();
+    response.description = kino_desc ? kino_desc.trim() : 'No description';
     response.author = Array.from(kino_authors).map(author => author.text);
+    response.recommended = Array.from()
     
     offers.kinokuniya = { price, url }; // { price: price, url: url }
     
@@ -86,6 +98,18 @@ router.get('/search', function(req, res, next) {
 	});
   
   request(`https://opentrolley.com.sg/Book_Detail.aspx?EAN=${req.query.isbn}`, (err, trolley) => {
+    if (err) {
+      console.error('Error fetching from opentrolley', err);
+      offers.opentrolley = {
+        error: true
+      };
+      
+      done();
+      
+      return;
+    }
+    
+    try{
 		const dom = new JSDOM(trolley.body);
 		const book_price = dom.window.document.querySelector('span#ctl00_ContentPlaceHolder1_lblDiscountedPrice').textContent;
     
@@ -93,6 +117,11 @@ router.get('/search', function(req, res, next) {
       price: book_price,
       url: `https://opentrolley.com.sg/Book_Detail.aspx?EAN=${req.query.isbn}`
     };
+    } catch(e) {
+      offers.opentrolley = {
+        error: true
+      }
+    }
     
     done();
   });
@@ -101,17 +130,27 @@ router.get('/search', function(req, res, next) {
     if (err) {
       console.error('Error fetching from bookdepository', err);
       offers.bookdepository = {
-        error: 
-      }
+        error: true
+      };
+      
+      done();
+      
+      return;
     }
     
-		const depo_dom = new JSDOM(depo.body);
-		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent;
-    
-		offers.bookdepository = {
-      price: book_price,
-      url: 'https://www.bookdepository.com' + depo_dom.window.document.querySelector('link[rel="canonical"]').href
-    };
+    try {
+      const depo_dom = new JSDOM(depo.body);
+      const book_price = depo_dom.window.document.querySelector('.sale-price').textContent;
+
+      offers.bookdepository = {
+        price: book_price,
+        url: 'https://www.bookdepository.com' + depo_dom.window.document.querySelector('link[rel="canonical"]').href
+      };
+    } catch (e) {
+      offers.bookdepository = {
+        error: true
+      };
+    }
     
     done();
   });
@@ -120,6 +159,7 @@ router.get('/search', function(req, res, next) {
 });
 
 router.get('/amazon', function(req, res, next) {
+  
   const options = {
     url: `https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Dstripbooks-intl-ship&field-keywords=${req.query.isbn}`,
     gzip: true,
@@ -129,7 +169,9 @@ router.get('/amazon', function(req, res, next) {
   };
 	request(options, (err, amazon) => {
     const amazon_dom = new JSDOM(amazon.body);
-    const book_price = amazon_dom.window.document.querySelector('.sale-price').textContent;
+    const first_result = amazon_dom.querySelector("div[data-cel-widget='search_result_0']");
+    if !first_result:
+    
 		let response = { 'body': amazon.body}
     
 		res.json(response)
