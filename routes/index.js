@@ -50,7 +50,7 @@ router.get('/search', function(req, res, next) {
   */
   function done() {
     if ('bookdepository' in offers && 'kinokuniya' in offers) {
-      
+      res.json(response)
     }
   }
 	request(`https://singapore.kinokuniya.com/bw/${req.query.isbn}`, (err, kino) => {
@@ -60,9 +60,9 @@ router.get('/search', function(req, res, next) {
 		
 		var kino_title = (doc.document.getElementsByClassName('dContent')[0].querySelector('h1').textContent);
 		var kino_desc = (doc.document.getElementsByClassName('dInfoTxt product-descrip readmore-js-section readmore-js-collapsed')[0].textContent);
-		var kino_author = (doc.document.getElementsByClassName('author')[0].querySelectorAll('a'));
+		var kino_authors = (doc.document.getElementsByClassName('author')[0].querySelectorAll('a'));
 		var kino_category = (doc.document.getElementsByClassName('clearfix')[0].querySelector('li:nth-child(2)').textContent);
-		//var price = (doc.document.getElementsByClassName('price')[0].querySelector('span').textContent);
+		var price = (doc.document.getElementsByClassName('price')[0].querySelector('span').textContent);
 		//console.log(price);
 		var img = (doc.document.getElementsByClassName('slider3')[0].querySelector('img'));
 		
@@ -78,14 +78,19 @@ router.get('/search', function(req, res, next) {
     response.description = kino_desc.trim();
     response.author = kino_authors_array;
     
-		res.json({
-			isbn: req.query.isbn,
-			title: kino_title,
-			cover: img.src,
-			category: kino_category,
-			description: kino_desc.trim(),
-			author: kino_authors_array,
-		});
+    // res.json({
+    //   isbn: req.query.isbn,
+    //   title: kino_title,
+    //   cover: img.src,
+    //   category: kino_category,
+    //   description: kino_desc.trim(),
+    //   author: kino_authors_array,
+    // });
+    
+    offers.kinokuniya = {
+      price: price,
+      url: doc.window.document.querySelector('link[rel="canonical"]').href
+    };
     
     done();
 	});
@@ -94,13 +99,12 @@ router.get('/search', function(req, res, next) {
 		const depo_dom = new JSDOM(depo.body)
 		// ser = depo_dom.serialize()
 		// console.log(ser)
-		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent
-		console.log(book_price)
+		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent;
     
 		offers.bookdepository = {
-      price: book_price;
-      url: depo_dom.document.location.href
-    }
+      price: book_price,
+      url: depo_dom.window.document.querySelector('link[rel="canonical"]').href
+    };
     
   });
 });
