@@ -52,7 +52,7 @@ router.get('/search', function(req, res, next) {
   }
   */
   function done() {
-    if ('bookdepository' in offers && 'kinokuniya' in offers) {
+    if (Object.keys(offers).length === 3) {
       response.offers = Object.keys(offers).map(key => {
         const value = offers[key];
         return {
@@ -69,13 +69,13 @@ router.get('/search', function(req, res, next) {
 		//var m2 = kino.body.match(/<meta property="og:description" content="([^"]+)"/);
 		const doc = (new JSDOM(kino.body)).window;
 		
-		var kino_title = (doc.document.querySelector('.dContent h1').textContent);
-		var kino_desc = (doc.document.getElementsByClassName('dInfoTxt product-descrip readmore-js-section readmore-js-collapsed')[0].textContent);
-		var kino_authors = (doc.document.getElementsByClassName('author')[0].querySelectorAll('a'));
-		var kino_category = (doc.document.getElementsByClassName('clearfix')[0].querySelector('li:nth-child(2)').textContent);
-		var price = (doc.document.getElementsByClassName('price')[0].querySelector('span').textContent);
+		const kino_title = doc.document.querySelector('.dContent h1').innerText;
+		const kino_desc = doc.document.querySelector('#product_description_box .long_description').innerText;
+    const kino_authors = doc.document.querySelectorAll('.author a');
+		const kino_category = doc.document.querySelector('.clearfix li:nth-child(2)').innerText;
+		const price = doc.document.querySelector('.price span').innerText;
 		//console.log(price);
-		var img = (doc.document.getElementsByClassName('slider3')[0].querySelector('img'));
+		const img = doc.document.querySelector('.slider3 img');
 		
     response.isbn = req.query.isbn;
     response.title = kino_title;
@@ -92,6 +92,18 @@ router.get('/search', function(req, res, next) {
     done();
 	});
   
+  request(`https://www.thriftbooks.com/browse/?b.search=${req.query.isbn}`, (err, thrift) => {
+		const dom = new JSDOM(thrift.body);
+		const book_price = dom.window.document.querySelector('.price').textContent;
+    
+		offers.thriftbooks = {
+      price: book_price,
+      url: dom.window.document.querySelector('link[rel="canonical"]').href
+    };
+    
+    done();
+  });
+  
   request(`https://www.bookdepository.com/search?searchTerm=${req.query.isbn}`, (err, depo) => {
 		const depo_dom = new JSDOM(depo.body);
 		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent;
@@ -103,11 +115,21 @@ router.get('/search', function(req, res, next) {
     
     done();
   });
+  
+  
 });
 
 router.get('/amazon', function(req, res, next) {
-	request(`https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Dstripbooks-intl-ship&field-keywords=${req.query.isbn}`, (err, emma) => {
-		let response = { 'body': emma.body}
+  const options = {
+    url: `https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Dstripbooks-intl-ship&field-keywords=${req.query.isbn}`,
+    gzip: true,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36'
+    }
+  };
+	request(options, (err, amazon) => {
+    const amazon_dom = new JSDOM(amazon.body);
+		let response = { 'body': amazon.body}
     
 		res.json(response)
     
