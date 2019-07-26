@@ -10,6 +10,11 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/search', function(req, res, next) {
+  const price_list = {};
+  function done() {
+    if ('bookdepository' in price_list && 'kinokuniya' in price_list) {
+    }
+  }
 	request(`https://singapore.kinokuniya.com/bw/${req.query.isbn}`, (err, kino) => {
 		//var m1 = kino.body.match(/<meta property="og:title" content="([^"]+)"/);
 		//var m2 = kino.body.match(/<meta property="og:description" content="([^"]+)"/);
@@ -35,17 +40,21 @@ router.get('/search', function(req, res, next) {
 			description: m2.trim(),
 			author: authors_array,
 		});
+    
+    done();
 	});
   
   request(`https://www.bookdepository.com/search?searchTerm=${req.query.isbn}`, (err, depo) => {
 		const depo_dom = new JSDOM(depo.body)
 		// ser = depo_dom.serialize()
 		// console.log(ser)
-		book_title = depo_dom.window.document.querySelector('.item-info').querySelector('h1[itemprop="name"').textContent;
+		const book_title = depo_dom.window.document.querySelector('.item-info').querySelector('h1[itemprop="name"').textContent;
 		console.log(book_title)
-		book_price = depo_dom.window.document.querySelector('.sale-price').textContent
+		const book_price = depo_dom.window.document.querySelector('.sale-price').textContent
 		console.log(book_price)
+    
 		price_list["bookdepository"] = book_price
+  });
 });
 
 module.exports = router;	
