@@ -4,10 +4,12 @@
   "routes": [
     {
       "src": "/book",
+      "dest": "app.js",
       "methods": ["GET"]
     },
     {
       "src": "/search",
+      "dest": "app.js",
       "methods": ["GET"]
     }
   ]
