@@ -19,7 +19,8 @@ router.get('/search', function(req, res, next) {
 		var m2 = (doc.document.getElementsByClassName('dInfoTxt product-descrip readmore-js-section readmore-js-collapsed')[0].textContent);
 		var m3 = (doc.document.getElementsByClassName('author')[0].querySelectorAll('a'));
 		var m4 = (doc.document.getElementsByClassName('clearfix')[0].querySelector('li:nth-child(2)').textContent);
-
+		var price = (doc.document.getElementsByClassName('price')[0].querySelector('span').textContent);
+		console.log(price);
 		var img = (doc.document.getElementsByClassName('slider3')[0].querySelector('img'));
 		
 		var authors_array = [];
