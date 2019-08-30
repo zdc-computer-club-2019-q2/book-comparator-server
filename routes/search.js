@@ -9,7 +9,8 @@ const GOOGLE_BOOKS_API = `https://www.googleapis.com/books/v1/volumes?key=${GOOG
 router.get('/', function(req, res, next) {
   // res.send('respond with a resource');
   request.get(`${GOOGLE_BOOKS_API}&q=${req.query.q}`, (err, result) => {
-    res.json(result.body);
+    res.set('Content-Type', 'application/json');
+    res.send(result.body);
   });
 });
 
