@@ -1,14 +1,9 @@
 {
   "version": 2,
-  "builds": [{ "src": "app.js", "use": "@now/node-server" }],
+  "builds": [{ "src": "app.js", "use": "@now/node" }],
   "routes": [
     {
-      "src": "/book",
-      "dest": "app.js",
-      "methods": ["GET"]
-    },
-    {
-      "src": "/search",
+      "src": "/",
       "dest": "app.js",
       "methods": ["GET"]
     }
