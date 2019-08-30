@@ -9,7 +9,7 @@ router.get('/', function(req, res, next) {
 	res.render('index', { title: 'Express' });
 });
 
-router.get('/search', function(req, res, next) {
+router.get('/book', function(req, res, next) {
   const response = {};
   /**
   {
